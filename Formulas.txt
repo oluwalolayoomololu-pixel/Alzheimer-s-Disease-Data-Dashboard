@@ -1,0 +1,61 @@
+                                                                COLUMNS & MEASURES
+
+Severity Score = 
+SWITCH(
+    All_Disease[Label],
+    "NonDemented", 0,
+    "VeryMildDemented", 1,
+    "MildDemented", 2,
+    "ModerateDemented", 3,
+    BLANK()
+)
+
+
+Disease Progression = AVERAGE(All_Disease[Severity Score])
+
+
+Scan Disorder Level = 
+CALCULATE(
+    AVERAGE(All_Disease[entropy]),
+    FILTER(All_Disease, All_Disease[Severity Score] > 0)
+)
+
+
+Radiance Progression = 
+CALCULATE(
+    AVERAGE(All_Disease[mean_pixel_intensity]),
+    FILTER(All_Disease, All_Disease[Severity Score] >= 0)
+)
+
+
+Brightness Variation = 
+CALCULATE(
+    AVERAGE(All_Disease[std_pixel_intensity]),
+    FILTER(All_Disease, All_Disease[Severity Score] >= 0)
+)
+
+
+Central Brightness Trend = 
+CALCULATE(
+    AVERAGE(All_Disease[center_brightness]),
+    FILTER(All_Disease, All_Disease[Severity Score] >= 0)
+)
+
+
+CompositeSeverity = 
+VAR MinEnt  = MINX(ALL('All_Disease'), [entropy])
+VAR MaxEnt  = MAXX(ALL('All_Disease'), [entropy])
+VAR zEnt    = DIVIDE([entropy] - MinEnt, MaxEnt - MinEnt)
+
+VAR MinEdge = MINX(ALL('All_Disease'), [edge_density])
+VAR MaxEdge = MAXX(ALL('All_Disease'), [edge_density])
+VAR zEdge   = DIVIDE([edge_density] - MinEdge, MaxEdge - MinEdge)
+
+VAR MinCtr  = MINX(ALL('All_Disease'), [center_brightness])
+VAR MaxCtr  = MAXX(ALL('All_Disease'), [center_brightness])
+VAR zCtr    = DIVIDE([center_brightness] - MinCtr, MaxCtr - MinCtr)
+
+RETURN
+    0.4 * zEnt      // texture complexity
+  + 0.3 * zEdge     // structural detail
+  + 0.3 * zCtr      // center brightness
